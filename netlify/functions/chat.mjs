@@ -12,8 +12,8 @@ const isBlockedQuestion = (messages) => messages.some((message) => {
   return BLOCKED_TERMS.some((term) => text.includes(term));
 });
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
+export default async (req) => {
+  if (req.method !== 'POST') {
     return jsonResponse(405, { error: 'Method not allowed.' }, { Allow: 'POST' });
   }
 
@@ -22,12 +22,12 @@ exports.handler = async (event) => {
 
   let body;
   try {
-    body = JSON.parse(event.body || '{}');
+    body = await req.json();
   } catch {
     return jsonResponse(400, { error: 'Invalid request body.' });
   }
 
-  const { messages, portfolioContext } = body;
+  const { messages, portfolioContext } = body || {};
   if (!Array.isArray(messages) || messages.length === 0 || messages.length > 8) {
     return jsonResponse(400, { error: 'Invalid chat messages.' });
   }
@@ -84,9 +84,8 @@ exports.handler = async (event) => {
 };
 
 function jsonResponse(statusCode, body, headers = {}) {
-  return {
-    statusCode,
+  return new Response(JSON.stringify(body), {
+    status: statusCode,
     headers: { 'Content-Type': 'application/json', ...headers },
-    body: JSON.stringify(body),
-  };
+  });
 }
